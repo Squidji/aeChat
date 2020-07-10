@@ -2,7 +2,7 @@
 <html>
 <head>
 	<title>aeChat</title>
-	<style></style>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
 	<script src='../../socket.io/socket.io.js'></script>
 	<script src='//code.jquery.com/jquery-1.10.1.min.js'></script>
 	<style>
@@ -61,6 +61,15 @@
 			background-color: #555;
 			right: 0;
 			position: fixed;
+		}
+
+		@media screen and (max-width: 900px) {
+			#right {
+				display: none;
+			}
+			#left {
+				width: 100%;
+			}
 		}
 	</style>
 </head>
