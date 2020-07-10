@@ -7,122 +7,12 @@
 	<script src='//code.jquery.com/jquery-1.10.1.min.js'></script>
 	<script src='//code.jquery.com/ui/1.12.1/jquery-ui.min.js'></script>
 	<link rel='stylesheet' type='text/css' href='https://code.jquery.com/ui/1.12.1/themes/dark-hive/jquery-ui.css'>
-	<style>
-		* { margin: 0; padding: 0; box-sizing: border-box; }
-		body { 
-			font: 13px Verdana, sans-serif;
-			background-color: #222;
-			color: #fff;
-		}
-		form {
-			background: #111;
-			padding: 3px;
-			position: fixed;
-			bottom: 0;
-			width: 100%;
-		}
-		form input {
-			border-style: solid;
-			border-width: 1px;
-			padding: 10px;
-			width: 100%;
-			background-color: #222;
-			color: #fff;
-		}
-		#messages, #users {
-			list-style-type: none;
-			margin: 0;
-			padding: 0;
-			height: 91vh;
-			overflow-y: scroll;
-		}
-		#messages li {
-			padding: 7px 10px;
-			font-size: 15px;
-		}
-		#messages li:nth-child(odd) {
-			background: #3333337a;
-		}
-		#messages li b {
-			color: #3d91d6;
-		}
-		#messages li a {
-			color: #6edce4;
-		}
-		#users {overflow: hidden;}
-		#users li {
-			font-size: 25px;
-			padding: 10px 15px;
-		}
-
-		#left, #right {
-			display: block;
-		}
-		#left {
-			width: 85%;
-			background-color: #222;
-			background: #000000 url("//code.jquery.com/ui/1.12.1/themes/dark-hive/images/ui-bg_loop_25_000000_21x21.png") 50% 50% repeat;
-		}
-		#right {
-			width: 15%;
-			background-color: #555;
-			right: 0;
-			position: fixed;
-		}
-
-		#typingbox {
-			padding: 5px 10px;
-			border-top: #666 1px solid;
-		}
-		#typing {
-			font-size: 17px;
-		}
-		#typing b {
-			color: #3d91d6;
-		}
-
-		@media screen and (max-width: 900px) {
-			#right {
-				display: none;
-			}
-			#left {
-				width: 100%;
-			}
-		}
-
-		.dialog {display: none;}
-		.dialog form, .dialog fieldset {
-			display: inline-block;
-			position: relative;
-			border-width: 0;
-			width: 100%;
-			margin-top: 3px;
-		}
-		.ui-dialog {padding: 0;}
-		.ui-button {background: #222;}
-		.ui-button:hover {background: #3d91d6;}
-		.ui-widget-overlay {
-			background: #000;
-		}
-		.ui-draggable .ui-dialog-titlebar {
-			cursor: default;
-		}
-		.ui-dialog-titlebar-close {
-			display: none;
-		}
-		.ui-widget-header {
-			background: #444;
-			border-radius: 3px;
-		}
-		.ui-widget.ui-widget-content {
-			border-width: 0;
-		}
-	</style>
+	<link href='./index.css' rel='stylesheet' type='text/css'>
 </head>
 <body>
 
 	<div id='username_modal' class='dialog'>
-		Welcome to æChat (v1.1)
+		Welcome to æChat (v1.2)
 		<form>
 			<fieldset>
 				<input type='text' placeholder='Username' id='username_in'>
@@ -148,123 +38,111 @@
 		<input id='inp' autocomplete='off' autofocus='on' oninput='isTyping()' placeholder='Message...' />
 	</form>
 
-	<script>
-		var socket = io.connect();
+<script>
 
-		// submit text message without reload/refresh the page
-		$('form').submit(function(e){
-			e.preventDefault(); // prevents page reloading
+var socket = io.connect();
 
-			// gets message, forwards if not blank
-			let m = $('#inp').val();
-			if (m !== '') {
-				m = urlify(m);
-				socket.emit('chat_message', m); 
-				socket.emit('no_typing', username);
-			};
+// submit text message without reload/refresh the page
+$('form').submit(function(e){
+	e.preventDefault(); // prevents page reloading
 
-			$('#inp').val('');
-			return false;
-		});
+	// gets message, forwards if not blank
+	let m = $('#inp').val();
+	if (m !== '') {
+		m = urlify(m);
+		socket.emit('chat_message', m); 
+		socket.emit('no_typing', username);
+	};
 
-		// append the chat text message
-		socket.on('chat_message', function(msg){
-			$('#messages').append($('<li>').html(msg));
-			$('#messages').scrollTop($('#messages')[0].scrollHeight);
-		});
+	$('#inp').val('');
+	return false;
+});
 
-		// append text if someone is online
-		socket.on('is_online', function(username) {
-			$('#messages').append($('<li>').html(username));
-		});
+// append the chat text message
+socket.on('chat_message', function(msg){
+	$('#messages').append($('<li>').html(msg));
+	$('#messages').scrollTop($('#messages')[0].scrollHeight);
+});
 
-		socket.on('upd_users', function(list) {
-			$('#users').empty();
-			$('#users').append($('<li>').append($('<b>').html('USERLIST:')));
-			list.forEach(n => $('#users').append($('<li>').html(n)));
-		});
+// append text if someone is online
+socket.on('is_online', function(username) {
+	$('#messages').append($('<li>').html(username).addClass('sysmsg'));
+});
 
-		socket.on('upd_typing', function(list) {
-			if (list.length === 0) {
-				$('#typing').html('Nobody is typing...');
-			} else if (list.length === 1) {
-				$('#typing').html('<b>' + list[0] + '</b> is typing...');
-			} else if (list.length === 2) {
-				$('#typing').html('<b>' + list[0] + '</b> and <b>' + list [1] + '</b> are typing...');
-			} else {
-				let str = '';
-				for (let i=0; i<list.length-1; i++) {
-					str += '<b>' + list[i] + '</b>, ';
-				};
-				str += 'and <b>' + list[list.length-1] + '</b>';
-				$('#typing').html(str + ' are typing...');
-			};
-		});
+socket.on('upd_users', function(usr, clr) {
+	$('#users').empty();
+	usr.forEach(n => $('#users').append($('<li>').html(n).css('color', clr[usr.indexOf(n)])));
+});
+
+socket.on('upd_typing', function(list) {
+	if (list.length === 0) {
+		$('#typing').html('Nobody is typing...');
+	} else if (list.length === 1) {
+		$('#typing').html('<b>' + list[0] + '</b> is typing...');
+	} else if (list.length === 2) {
+		$('#typing').html('<b>' + list[0] + '</b> and <b>' + list [1] + '</b> are typing...');
+	} else {
+		let str = '';
+		for (let i=0; i<list.length-1; i++) {
+			str += '<b>' + list[i] + '</b>, ';
+		};
+		str += 'and <b>' + list[list.length-1] + '</b>';
+		$('#typing').html(str + ' are typing...');
+	};
+});
 
 
 
-		// ASK USERNAME
-/* 		let username_good = false
-		var username
-		while (username_good === false) {
-			username = prompt('Username:');
+// ASK USERNAME
+let username = 'error ae:100';
+$(function () {$('#username_modal').dialog({
+	title: 'æChat',
+	show: true,
+	modal: true,
+	resizable: false,
+	//autoOpen: false,
+	buttons: {
+		'Join the Chat': function() {
+			
+			username = $('#username_in').val();
 			if (username === null || username === undefined || username === '') {
 				alert('Please include a username.');
+				location.reload();
 			}
 			else if (username.includes(' ')) {
 				alert('Do not include spaces in your username.');
-			}
-			else {
-				username_good = true;
+				location.reload();
 			};
-		};
-		 */
 
-		let username = 'error ae:100';
-		$(function () {$('#username_modal').dialog({
-			title: 'æChat',
-			show: true,
-			modal: true,
-			resizable: false,
-			//autoOpen: false,
-			buttons: {
-				'Join the Chat': function() {
-					
-					username = $('#username_in').val();
-					if (username === null || username === undefined || username === '') {
-						alert('Please include a username.');
-						location.reload();
-					}
-					else if (username.includes(' ')) {
-						alert('Do not include spaces in your username.');
-						location.reload();
-					};
+			$(this).dialog('close');
+			socket.emit('username', username);
 
-					$(this).dialog('close');
-					socket.emit('username', username);
+		}
+	}
+});});
 
-				}
-			}
-		});});
 
-		function isTyping() {
-			if ($('#inp').val() === '') {
-				socket.emit('no_typing', username);
-			} else {
-				socket.emit('is_typing', username);
-			};
-		};
 
-		function urlify(text) {
-			var urlRegex = /(https?:\/\/[^\s]+)/g;
-			return text.replace(urlRegex, function(url) {
-				return '<a href="' + url + '" target="blank">' + url + '</a>';
-			});
-		};
+function isTyping() {
+	if ($('#inp').val() === '') {
+		socket.emit('no_typing', username);
+	} else {
+		socket.emit('is_typing', username);
+	};
+};
 
-		setInterval( function(){
-			$('#inp').focus();
-		});
-	</script>
+function urlify(text) {
+	var urlRegex = /(https?:\/\/[^\s]+)/g;
+	return text.replace(urlRegex, function(url) {
+		return '<a href="' + url + '" target="blank">' + url + '</a>';
+	});
+};
+
+setInterval( function(){
+	$('#inp').focus();
+});
+
+
+</script>
 </body>
 </html>
