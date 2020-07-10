@@ -19,9 +19,11 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on('disconnect', function(username) {
-		io.emit('is_online', '🔴 <i>' + socket.username + ' left the chat..</i>');
-		userlist = userlist.filter(function(n){ return n !== socket.username; });
-		io.emit('users', userlist);
+		if (socket.username !== undefined) {
+			io.emit('is_online', '🔴 <i>' + socket.username + ' left the chat..</i>');
+			userlist = userlist.filter(function(n){ return n !== socket.username; });
+			io.emit('users', userlist);
+		};
     });
 
     socket.on('chat_message', function(message) {
