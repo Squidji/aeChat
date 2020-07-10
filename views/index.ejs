@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>aeChat</title>
+	<title>æChat</title>
 	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
 	<script src='../../socket.io/socket.io.js'></script>
 	<script src='//code.jquery.com/jquery-1.10.1.min.js'></script>
+	<script src='//code.jquery.com/ui/1.12.1/jquery-ui.min.js'></script>
+	<link rel='stylesheet' type='text/css' href='https://code.jquery.com/ui/1.12.1/themes/dark-hive/jquery-ui.css'>
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body { 
-			font: 13px Helvetica, Arial;
+			font: 13px Verdana, sans-serif;
 			background-color: #222;
 			color: #fff;
 		}
@@ -35,11 +37,17 @@
 			overflow-y: scroll;
 		}
 		#messages li {
-			padding: 5px 10px;
-			font-size: 14px;
+			padding: 7px 10px;
+			font-size: 15px;
 		}
 		#messages li:nth-child(odd) {
 			background: #333;
+		}
+		#messages li b {
+			color: #3d91d6;
+		}
+		#messages li a {
+			color: #6edce4;
 		}
 		#users {overflow: hidden;}
 		#users li {
@@ -68,6 +76,9 @@
 		#typing {
 			font-size: 17px;
 		}
+		#typing b {
+			color: #3d91d6;
+		}
 
 		@media screen and (max-width: 900px) {
 			#right {
@@ -77,9 +88,46 @@
 				width: 100%;
 			}
 		}
+
+		.dialog {display: none;}
+		.dialog form, .dialog fieldset {
+			display: inline-block;
+			position: relative;
+			border-width: 0;
+			width: 100%;
+			margin-top: 3px;
+		}
+		.ui-dialog {padding: 0;}
+		.ui-button {background: #222;}
+		.ui-button:hover {background: #3d91d6;}
+		.ui-widget-overlay {
+			background: #000;
+		}
+		.ui-draggable .ui-dialog-titlebar {
+			cursor: default;
+		}
+		.ui-dialog-titlebar-close {
+			display: none;
+		}
+		.ui-widget-header {
+			background: #444;
+			border-radius: 3px;
+		}
+		.ui-widget.ui-widget-content {
+			border-width: 0;
+		}
 	</style>
 </head>
 <body>
+
+	<div id='username_modal' class='dialog'>
+		Welcome to æChat (v1.0)
+		<form>
+			<fieldset>
+				<input type='text' placeholder='Username' id='username_in'>
+			</fieldset>
+		</form>
+	</div>
 
 	<div id='right'>
 		<ul id='users'>
@@ -109,7 +157,8 @@
 			// gets message, forwards if not blank
 			let m = $('#inp').val();
 			if (m !== '') {
-				socket.emit('chat_message', $('#inp').val()); 
+				m = urlify(m);
+				socket.emit('chat_message', m); 
 				socket.emit('no_typing', username);
 			};
 
@@ -138,21 +187,23 @@
 			if (list.length === 0) {
 				$('#typing').html('Nobody is typing...');
 			} else if (list.length === 1) {
-				$('#typing').html(list[0] + ' is typing...');
+				$('#typing').html('<b>' + list[0] + '</b> is typing...');
 			} else if (list.length === 2) {
-				$('#typing').html(list[0] + ' and ' + list [1] + ' are typing...');
+				$('#typing').html('<b>' + list[0] + '</b> and <b>' + list [1] + '</b> are typing...');
 			} else {
 				let str = '';
 				for (let i=0; i<list.length-1; i++) {
-					str += list[i] + ', ';
+					str += '<b>' + list[i] + '</b>, ';
 				};
-				str += 'and ' + list[list.length-1];
+				str += 'and <b>' + list[list.length-1] + '</b>';
 				$('#typing').html(str + ' are typing...');
 			};
 		});
 
-		// ask username
-		let username_good = false
+
+
+		// ASK USERNAME
+/* 		let username_good = false
 		var username
 		while (username_good === false) {
 			username = prompt('Username:');
@@ -166,7 +217,34 @@
 				username_good = true;
 			};
 		};
-		socket.emit('username', username);
+		 */
+
+		let username = 'error ae:100';
+		$(function () {$('#username_modal').dialog({
+			title: 'æChat',
+			show: true,
+			modal: true,
+			resizable: false,
+			//autoOpen: false,
+			buttons: {
+				'Join the Chat': function() {
+					
+					username = $('#username_in').val();
+					if (username === null || username === undefined || username === '') {
+						alert('Please include a username.');
+						location.reload();
+					}
+					else if (username.includes(' ')) {
+						alert('Do not include spaces in your username.');
+						location.reload();
+					};
+
+					$(this).dialog('close');
+					socket.emit('username', username);
+
+				}
+			}
+		});});
 
 		function isTyping() {
 			if ($('#inp').val() === '') {
@@ -174,6 +252,13 @@
 			} else {
 				socket.emit('is_typing', username);
 			};
+		};
+
+		function urlify(text) {
+			var urlRegex = /(https?:\/\/[^\s]+)/g;
+			return text.replace(urlRegex, function(url) {
+				return '<a href="' + url + '" target="blank">' + url + '</a>';
+			});
 		};
 
 		setInterval( function(){
