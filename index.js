@@ -10,6 +10,8 @@ app.get('/', function(req, res) {
 var userlist = [];
 var typinglist = [];
 
+var colorlist = ['#3d91d6', '#d04f4f', '#7dd044', '#b695ff', '#ff7247', '#fad543', '#ff4795']
+
 io.sockets.on('connection', function(socket) {
     socket.on('username', function(username) {
 		socket.username = username;
@@ -33,7 +35,9 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on('chat_message', function(message) {
-        io.emit('chat_message', '<b>' + socket.username + ':</b> ' + message);
+		let c = userlist.indexOf(socket.username);
+		if (c > colorlist.length-1) {c = '#3d91d6'} else {c = colorlist[c]};
+        io.emit('chat_message', '<b style="color: '+c+';">' + socket.username + ':</b> ' + message);
 	});
 
 	socket.on('is_typing', function(username) {
