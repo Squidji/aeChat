@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>aeChat</title>
+	<style></style>
+	<script src='../../socket.io/socket.io.js'></script>
+	<script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body { 
+			font: 13px Helvetica, Arial;
+			background-color: #222;
+			color: #fff;
+		}
+		form {
+			background: #111;
+			padding: 3px;
+			position: fixed;
+			bottom: 0;
+			width: 100%;
+			border-color: #444;
+			border-top-style: solid;
+			border-top-width: 1px;
+		}
+		form input {
+			border-style: solid;
+			border-width: 1px;
+			padding: 10px;
+			width: 100%;
+			background-color: #222;
+			color: #fff;
+		}
+		#messages, #users {
+			list-style-type: none;
+			margin: 0;
+			padding: 0;
+			height: 94vh;
+			overflow-y: scroll;
+		}
+		#messages li, #users li {
+			padding: 5px 10px;
+		}
+		#messages li:nth-child(odd) {
+			background: #333;
+		}
+		#users {overflow: hidden;}
+		#users li {
+			font-size: 25px;
+			padding: 10px 15px;
+		}
+
+		#left, #right {
+			display: block;
+		}
+		#left {
+			width: 85%;
+			background-color: #222;
+		}
+		#right {
+			width: 15%;
+			background-color: #555;
+			right: 0;
+			position: fixed;
+		}
+	</style>
+</head>
+<body>
+
+	<div id='right'>
+		<ul id='users'>
+		</ul>
+	</div>
+
+	<div id='left'>
+		<ul id='messages'></ul>
+	</div>
+
+	<form action='/' method='POST' id='chatForm'>
+		<input id='inp' autocomplete='off' autofocus='on' oninput='isTyping()' placeholder='Message...' />
+	</form>
+
+	<script>
+		var socket = io.connect('http://localhost:8080');
+
+		// submit text message without reload/refresh the page
+		$('form').submit(function(e){
+			e.preventDefault(); // prevents page reloading
+
+			// gets message, forwards if not blank
+			let m = $('#inp').val();
+			if (m !== '') {socket.emit('chat_message', $('#inp').val())};
+
+			$('#inp').val('');
+			return false;
+		});
+
+		// append the chat text message
+		socket.on('chat_message', function(msg){
+			$('#messages').append($('<li>').html(msg));
+			$('#messages').scrollTop($('#messages')[0].scrollHeight);
+		});
+
+		// append text if someone is online
+		socket.on('is_online', function(username) {
+			$('#messages').append($('<li>').html(username));
+		});
+
+		socket.on('users', function(list) {
+			$('#users').empty();
+			$('#users').append($('<li>').append($('<b>').html('USERLIST:')));
+			list.forEach(n => $('#users').append($('<li>').html(n)));
+		});
+
+		// ask username
+		let username_good = false
+		var username
+		while (username_good === false) {
+			username = prompt('Username:');
+			if (username === null || username === undefined || username === '') {
+				alert('Please include a username.');
+			}
+			else if (username.includes(' ')) {
+				alert('Do not include spaces in your username.');
+			}
+			else {
+				username_good = true;
+			};
+		};
+		socket.emit('username', username);
+
+		function isTyping() {
+			socket.emit('is_typing', username);
+		};
+
+		setInterval( function(){
+			$('#inp').focus();
+		});
+	</script>
+</body>
+</html>
