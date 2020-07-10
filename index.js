@@ -15,19 +15,36 @@ io.sockets.on('connection', function(socket) {
 		socket.username = username;
 		userlist.push(socket.username);
 		io.emit('is_online', '🔵 <i>' + socket.username + ' joined the chat..</i>');
-		io.emit('users', userlist);
+		io.emit('upd_users', userlist);
     });
 
     socket.on('disconnect', function(username) {
 		if (socket.username !== undefined) {
 			io.emit('is_online', '🔴 <i>' + socket.username + ' left the chat..</i>');
+
+			// remove from user list
 			userlist = userlist.filter(function(n){ return n !== socket.username; });
-			io.emit('users', userlist);
+			io.emit('upd_users', userlist);
+
+			// remove from typing list
+			typinglist = typinglist.filter(function(n){ return n !== socket.username; });
+			io.emit('upd_typing', typinglist);
 		};
     });
 
     socket.on('chat_message', function(message) {
         io.emit('chat_message', '<strong>' + socket.username + '</strong>: ' + message);
+	});
+
+	socket.on('is_typing', function(username) {
+		if (!typinglist.includes(username)) {
+			typinglist.push(socket.username);
+			io.emit('upd_typing', typinglist);
+		};
+	});
+	socket.on('no_typing', function(username) {
+		typinglist = typinglist.filter(function(n){ return n !== socket.username; });
+		io.emit('upd_typing', typinglist);
 	});
 });
 

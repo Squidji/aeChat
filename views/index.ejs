@@ -34,7 +34,7 @@
 			list-style-type: none;
 			margin: 0;
 			padding: 0;
-			height: 94vh;
+			height: 91vh;
 			overflow-y: scroll;
 		}
 		#messages li, #users li {
@@ -63,6 +63,10 @@
 			position: fixed;
 		}
 
+		#typingbox {
+			padding: 5px 10px;
+		}
+
 		@media screen and (max-width: 900px) {
 			#right {
 				display: none;
@@ -84,6 +88,11 @@
 		<ul id='messages'></ul>
 	</div>
 
+	<div id='typingbox'>
+		<ul>
+			<li id='typing'>The chat is quiet...</li>
+		</ul>
+	</div>
 	<form action='/' method='POST' id='chatForm'>
 		<input id='inp' autocomplete='off' autofocus='on' oninput='isTyping()' placeholder='Message...' />
 	</form>
@@ -97,7 +106,10 @@
 
 			// gets message, forwards if not blank
 			let m = $('#inp').val();
-			if (m !== '') {socket.emit('chat_message', $('#inp').val())};
+			if (m !== '') {
+				socket.emit('chat_message', $('#inp').val()); 
+				socket.emit('no_typing', username);
+			};
 
 			$('#inp').val('');
 			return false;
@@ -114,10 +126,27 @@
 			$('#messages').append($('<li>').html(username));
 		});
 
-		socket.on('users', function(list) {
+		socket.on('upd_users', function(list) {
 			$('#users').empty();
 			$('#users').append($('<li>').append($('<b>').html('USERLIST:')));
 			list.forEach(n => $('#users').append($('<li>').html(n)));
+		});
+
+		socket.on('upd_typing', function(list) {
+			if (list.length === 0) {
+				$('#typing').html('Nobody is typing...');
+			} else if (list.length === 1) {
+				$('#typing').html(list[0] + ' is typing...');
+			} else if (list.length === 2) {
+				$('#typing').html(list[0] + ' and ' + list [1] + ' are typing...');
+			} else {
+				let str = '';
+				for (let i=0; i<list.length-1; i++) {
+					str += list[i] + ', ';
+				};
+				str += 'and ' + list[list.length-1];
+				$('#typing').html(str + ' are typing...');
+			};
 		});
 
 		// ask username
@@ -138,7 +167,11 @@
 		socket.emit('username', username);
 
 		function isTyping() {
-			socket.emit('is_typing', username);
+			if ($('#inp').val() === '') {
+				socket.emit('no_typing', username);
+			} else {
+				socket.emit('is_typing', username);
+			};
 		};
 
 		setInterval( function(){
